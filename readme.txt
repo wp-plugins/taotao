@@ -1,9 +1,9 @@
 === taotao ===
 Contributors: weiqk 
 Tags: taotao,QQ taotao msg
-Requires at least: 2.3
+Requires at least: 2.8
 Tested up to: 2.8.5
-Stable tag: 1.000
+Stable tag: 1.001
 
 the taotao plugin can pulish your taotao msg(taotao.com) to your wordpress blog.
 
