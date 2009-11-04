@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: TaoTao
-Plugin URI: http://www.gegewan.org
+Plugin URI: http://www.gegewan.org/html/13.html
 Description: 把你的滔滔消息(taotao.com)同步到你的 WordPress
 Author: gegewan.org (weiqk@hotmail.com)
 Author URI: http://www.gegewan.org
-Version: 1.001
+Version: 1.002
 */
 
 register_activation_hook(__FILE__, 'taotao_activation');
@@ -69,24 +69,32 @@ function get_taotao_rss(){
 	$taotao_now = time();
 	
 	$taotao_cachefile = dirname(__FILE__) . '/cache/taotao.php';
-	$rss = array();
 	
 	if(is_readable($taotao_cachefile) && $taotao_cachetime + $taotao_period > $taotao_now){
 		$rss = unserialize(file_get_contents($taotao_cachefile));
 	}
 	else{
-		$rss_file = "http://pipes.yahoo.com/pipes/pipe.run?_id=deadbfd8e9a0ce354e0ed2ae7c7d7c18&_render=rss&num={$taotao_items}&qq={$taotao_account}";
-		$rss_object = simplexml_load_string(file_get_contents($rss_file));
-		foreach($rss_object->channel->item as $rss_item){
-			$rss[] = array(
-				'msg'=> (string)$rss_item->description,
-				'reply'=> (string)$rss_item->link,
-				'pubDate'=> date('Y-m-d H:i', strtotime($rss_item->pubDate))
-			);
+		$rss_file = "http://www.taotao.com/cgi-bin/msgMgr?type=3&num={$taotao_items}&qq={$taotao_account}";
+		@$rss_object = simplexml_load_string(file_get_contents($rss_file));
+		//print_r($rss_object->info->md);exit;
+		if(!empty($rss_object)){
+			foreach($rss_object->info->md->ml as $rss_item){
+				$replylink = "http://www.taotao.com/v1/reply/t.{$rss_item->id}/u.{$taotao_account}";
+				list($timemark, $posttime) = explode(',', $rss_item->t);
+				if(1 == $timemark) $pubDate = "{$posttime}秒钟前";
+				elseif(2 == $timemark) $pubDate = "{$posttime}分钟前";
+				elseif(3 == $timemark) $pubDate = "{$posttime}小时前";
+				elseif(7 == $timemark) $pubDate = date('Y-m-d H:i', strtotime($posttime));
+				$rss[] = array(
+					'msg'=> (string)$rss_item->cn,
+					'reply'=> $replylink,
+					'pubDate'=> $pubDate
+				);
+			}
+			
+			@file_put_contents($taotao_cachefile, serialize($rss));
+			update_option('taotao_cachetime', $taotao_now);
 		}
-		
-		@file_put_contents($taotao_cachefile, serialize($rss));
-		update_option('taotao_cachetime', $taotao_now);		
 	}
 	return $rss;
 }
